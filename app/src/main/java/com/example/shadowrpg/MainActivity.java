@@ -27,9 +27,8 @@ public class MainActivity extends Activity {
         private boolean bossAppeared = false;
         private boolean ending = false;
 
-        GameView(Context context) {
+        public GameView(Context context) {
             super(context);
-            paint.setTypeface(Typeface.DEFAULT_BOLD);
         }
 
         private void drawText(
@@ -53,29 +52,37 @@ public class MainActivity extends Activity {
 
             canvas.drawColor(Color.rgb(8, 8, 15));
 
-            // 엔딩
             if (ending) {
+
                 drawText(
                         canvas,
                         "THE JOURNEY HAS ENDED",
-                        width / 2,
-                        height / 2 - 30,
+                        width / 2f,
+                        height / 2f - 30,
                         32
                 );
 
                 drawText(
                         canvas,
                         "SHADOW RPG",
-                        width / 2,
-                        height / 2 + 40,
+                        width / 2f,
+                        height / 2f + 40,
                         42
+                );
+
+                drawText(
+                        canvas,
+                        "THE STORY HAS JUST BEGUN",
+                        width / 2f,
+                        height / 2f + 90,
+                        18
                 );
 
                 return;
             }
 
-            // 바닥
             paint.setColor(Color.rgb(25, 25, 35));
+
             canvas.drawRect(
                     0,
                     height - 120,
@@ -84,8 +91,8 @@ public class MainActivity extends Activity {
                     paint
             );
 
-            // 플레이어
             paint.setColor(Color.CYAN);
+
             canvas.drawCircle(
                     180,
                     height - 170,
@@ -103,11 +110,10 @@ public class MainActivity extends Activity {
 
             if (!bossAppeared) {
 
-                // 슬라임
                 drawText(
                         canvas,
                         "SHADOW SLIME",
-                        width / 2,
+                        width / 2f,
                         60,
                         32
                 );
@@ -116,9 +122,9 @@ public class MainActivity extends Activity {
 
                 canvas.drawOval(
                         width - 250,
-                        height / 2 - 70,
+                        height / 2f - 70,
                         width - 110,
-                        height / 2 + 70,
+                        height / 2f + 70,
                         paint
                 );
 
@@ -126,7 +132,7 @@ public class MainActivity extends Activity {
                         canvas,
                         "SLIME",
                         width - 180,
-                        height / 2 + 8,
+                        height / 2f + 8,
                         20
                 );
 
@@ -141,11 +147,10 @@ public class MainActivity extends Activity {
 
             } else {
 
-                // 보스
                 drawText(
                         canvas,
                         "FOREST WARDEN",
-                        width / 2,
+                        width / 2f,
                         60,
                         32
                 );
@@ -154,7 +159,7 @@ public class MainActivity extends Activity {
 
                 canvas.drawCircle(
                         width - 180,
-                        height / 2,
+                        height / 2f,
                         100,
                         paint
                 );
@@ -163,7 +168,7 @@ public class MainActivity extends Activity {
                         canvas,
                         "WARDEN",
                         width - 180,
-                        height / 2 + 8,
+                        height / 2f + 8,
                         20
                 );
 
@@ -180,7 +185,7 @@ public class MainActivity extends Activity {
             drawText(
                     canvas,
                     "TAP THE ENEMY",
-                    width / 2,
+                    width / 2f,
                     height - 45,
                     24
             );
@@ -209,6 +214,10 @@ public class MainActivity extends Activity {
 
             if (ratio < 0) {
                 ratio = 0;
+            }
+
+            if (ratio > 1) {
+                ratio = 1;
             }
 
             paint.setColor(Color.rgb(60, 220, 90));
@@ -241,38 +250,28 @@ public class MainActivity extends Activity {
 
             boolean hitEnemy =
                     x > width - 300 &&
-                    y > height / 2 - 160 &&
-                    y < height / 2 + 160;
+                    y > height / 2f - 160 &&
+                    y < height / 2f + 160;
 
             if (!hitEnemy) {
                 return true;
             }
 
-            // 슬라임
             if (!bossAppeared) {
 
                 slimeHP -= 25;
 
                 if (slimeHP <= 0) {
-
                     slimeHP = 0;
-
-                    // 슬라임 처치 → 보스 등장
                     bossAppeared = true;
                 }
 
-            }
-
-            // 보스
-            else {
+            } else {
 
                 bossHP -= 50;
 
                 if (bossHP <= 0) {
-
                     bossHP = 0;
-
-                    // 보스 처치 → 엔딩
                     ending = true;
                 }
             }
