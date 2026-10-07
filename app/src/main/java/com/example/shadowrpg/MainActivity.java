@@ -1,21 +1,365 @@
-package com.example.shadowrpg;
-import android.app.*; import android.os.*; import android.graphics.*; import android.view.*; import android.content.*; import java.util.*;
-public class MainActivity extends Activity { public void onCreate(Bundle b){super.onCreate(b);getWindow().setFlags(1024,1024);setContentView(new GameView(this));}}
-class GameView extends View{
- Paint p=new Paint(3); Random r=new Random(); int hp=100,max=100,lv=1,xp=0,gold=0,ehp=35,emax=35; boolean boss=false,dead=false; String msg="잊혀진 숲에 들어왔다!";
- GameView(Context c){super(c);p.setTypeface(Typeface.DEFAULT_BOLD);}
- void t(Canvas c,String s,float x,float y,float z){p.setColor(Color.WHITE);p.setTextSize(z);c.drawText(s,x,y,p);}
- void bar(Canvas c,float x,float y,float w,int v,int m,int col){p.setColor(Color.DKGRAY);c.drawRect(x,y,x+w,y+18,p);p.setColor(col);c.drawRect(x,y,x+w*Math.max(0,v)/(float)m,y+18,p);}
- void btn(Canvas c,float x,float y,float w,String s){p.setColor(Color.rgb(45,50,65));c.drawRoundRect(x,y,x+w,y+60,12,12,p);t(c,s,x+25,y+38,19);}
- protected void onDraw(Canvas c){int w=getWidth(),h=getHeight();c.drawColor(Color.rgb(10,15,22));p.setColor(Color.rgb(25,55,35));c.drawRect(0,h*.62f,w,h,p);p.setColor(Color.LTGRAY);c.drawCircle(w*.82f,h*.18f,55,p);
- t(c,"SHADOW RPG",25,35,25);t(c,"Lv."+lv+"  EXP "+xp+"/100  GOLD "+gold,25,68,17);bar(c,25,82,230,hp,max,Color.rgb(200,45,55));t(c,"HP "+hp+"/"+max,32,97,13);
- if(!dead){p.setColor(boss?Color.rgb(120,30,130):Color.rgb(150,60,45));c.drawCircle(w*.58f,h*.43f,boss?70:45,p);t(c,boss?"FOREST WARDEN":"SHADOW SLIME",w*.47f,h*.29f,17);bar(c,w*.47f,h*.52f,190,ehp,emax,Color.RED);}
- else {t(c,hp==0?"DEFEATED":"VICTORY!",w*.45f,h*.40f,36);}
- int y=h-75;btn(c,20,y,140,"공격");btn(c,175,y,150,"강공격");btn(c,w-315,y,135,"포션");btn(c,w-165,y,145,dead?"다시 시작":"다음 적");t(c,msg,25,h-92,14);}
- public boolean onTouchEvent(MotionEvent e){if(e.getAction()!=1)return true;float x=e.getX(),y=e.getY();int w=getWidth(),h=getHeight();if(y<h-100)return true;
- if(x<160)atk(10,16);else if(x<340)atk(18,28);else if(x<w-170){hp=Math.min(max,hp+35);msg="포션으로 HP를 회복했다!";enemy();}else if(dead)reset();else next();invalidate();return true;}
- void atk(int a,int b){if(dead)return;int d=a+r.nextInt(b-a+1);ehp-=d;msg=d+" 데미지!";if(ehp<=0){xp+=35;gold+=20;if(xp>=100){lv++;xp-=100;max+=15;hp=max;msg="레벨 업!";}dead=true;return;}enemy();}
- void enemy(){int d=5+r.nextInt(boss?11:7);hp-=d;if(hp<=0){hp=0;dead=true;msg="쓰러졌다...";}else msg+=" 적의 반격!";}
- void next(){boss=lv>=3&&gold>=60;emax=boss?150:35+lv*8;ehp=emax;dead=false;msg=boss?"숲의 수호자 등장!":"새로운 몬스터 등장!";}
- void reset(){hp=max=100;lv=1;xp=gold=0;boss=false;emax=ehp=35;dead=false;msg="모험을 다시 시작한다!";}
+package com.shadowrpg;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.graphics.*;
+import android.view.*;
+import android.content.Context;
+
+public class MainActivity extends Activity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        getWindow().setFlags(
+                WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
+        );
+        setContentView(new GameView(this));
+    }
+
+    public static class GameView extends View {
+
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        int slimeHP = 100;
+        int bossHP = 500;
+
+        boolean bossAppeared = false;
+        boolean ending = false;
+
+        long endingTime = 0;
+
+        GameView(Context context) {
+            super(context);
+            p.setTypeface(Typeface.create("sans", Typeface.BOLD));
+        }
+
+        void text(Canvas c, String s, float x, float y, float size) {
+            p.setColor(Color.WHITE);
+            p.setTextSize(size);
+            p.setTextAlign(Paint.Align.CENTER);
+            c.drawText(s, x, y, p);
+        }
+
+        @Override
+        protected void onDraw(Canvas c) {
+
+            int w = getWidth();
+            int h = getHeight();
+
+            c.drawColor(Color.rgb(7, 7, 12));
+
+            // =========================
+            // 웅장한 엔딩
+            // =========================
+            if (ending) {
+                drawEnding(c, w, h);
+                invalidate();
+                return;
+            }
+
+            // =========================
+            // 바닥
+            // =========================
+
+            p.setColor(Color.rgb(25, 25, 35));
+            c.drawRect(0, h - 120, w, h, p);
+
+            // =========================
+            // 플레이어
+            // =========================
+
+            p.setColor(Color.CYAN);
+            c.drawCircle(220, h - 190, 35, p);
+
+            text(c, "HERO", 220, h - 184, 16);
+
+            // =========================
+            // 적 이름
+            // =========================
+
+            if (!bossAppeared) {
+
+                text(
+                        c,
+                        "SHADOW SLIME",
+                        w / 2,
+                        65,
+                        38
+                );
+
+                // 슬라임 HP
+                drawHPBar(
+                        c,
+                        70,
+                        90,
+                        350,
+                        slimeHP,
+                        100
+                );
+
+                // 슬라임
+                p.setColor(Color.rgb(70, 220, 100));
+                c.drawOval(
+                        w - 250,
+                        260,
+                        w - 110,
+                        380,
+                        p
+                );
+
+                text(
+                        c,
+                        "SLIME",
+                        w - 180,
+                        330,
+                        20
+                );
+
+            } else {
+
+                text(
+                        c,
+                        "FOREST WARDEN",
+                        w / 2,
+                        65,
+                        38
+                );
+
+                // 보스 HP
+                drawHPBar(
+                        c,
+                        70,
+                        90,
+                        500,
+                        bossHP,
+                        500
+                );
+
+                // 보스
+                p.setColor(Color.rgb(145, 80, 210));
+
+                c.drawCircle(
+                        w - 180,
+                        320,
+                        90,
+                        p
+                );
+
+                text(
+                        c,
+                        "WARDEN",
+                        w - 180,
+                        326,
+                        20
+                );
+            }
+
+            // =========================
+            // 공격 안내
+            // =========================
+
+            text(
+                    c,
+                    "TAP THE ENEMY TO ATTACK",
+                    w / 2,
+                    h - 55,
+                    24
+            );
+
+            invalidate();
+        }
+
+        // HP BAR
+        void drawHPBar(
+                Canvas c,
+                float x,
+                float y,
+                float width,
+                int hp,
+                int maxHP
+        ) {
+
+            p.setColor(Color.DKGRAY);
+
+            c.drawRect(
+                    x,
+                    y,
+                    x + width,
+                    y + 30,
+                    p
+            );
+
+            float ratio =
+                    Math.max(0, hp) / (float) maxHP;
+
+            p.setColor(Color.rgb(60, 220, 90));
+
+            c.drawRect(
+                    x,
+                    y,
+                    x + width * ratio,
+                    y + 30,
+                    p
+            );
+        }
+
+        // =========================
+        // 화면 터치
+        // =========================
+
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+
+            if (event.getAction() != MotionEvent.ACTION_UP)
+                return true;
+
+            if (ending)
+                return true;
+
+            float x = event.getX();
+            float y = event.getY();
+
+            int w = getWidth();
+
+            // 슬라임 공격
+            if (!bossAppeared) {
+
+                if (
+                        x > w - 300 &&
+                        y > 200 &&
+                        y < 450
+                ) {
+
+                    slimeHP -= 25;
+
+                    if (slimeHP <= 0) {
+
+                        slimeHP = 0;
+
+                        // 슬라임 처치 후 보스 등장
+                        bossAppeared = true;
+                    }
+                }
+
+            }
+
+            // 보스 공격
+            else {
+
+                if (
+                        x > w - 320 &&
+                        y > 180 &&
+                        y < 470
+                ) {
+
+                    bossHP -= 50;
+
+                    if (bossHP <= 0) {
+
+                        bossHP = 0;
+
+                        // 보스 처치
+                        startEnding();
+                    }
+                }
+            }
+
+            invalidate();
+
+            return true;
+        }
+
+        // =========================
+        // 엔딩 시작
+        // =========================
+
+        void startEnding() {
+
+            ending = true;
+            endingTime = System.currentTimeMillis();
+        }
+
+        // =========================
+        // 웅장한 엔딩
+        // =========================
+
+        void drawEnding(
+                Canvas c,
+                int w,
+                int h
+        ) {
+
+            long elapsed =
+                    System.currentTimeMillis()
+                    - endingTime;
+
+            // 점점 밝아지는 빛
+            float progress =
+                    Math.min(1.0f, elapsed / 3000.0f);
+
+            int brightness =
+                    (int)(30 + progress * 180);
+
+            p.setColor(Color.rgb(
+                    brightness,
+                    brightness,
+                    brightness
+            ));
+
+            c.drawCircle(
+                    w / 2,
+                    h / 2,
+                    100 + progress * 400,
+                    p
+            );
+
+            // 첫 번째 문구
+            if (elapsed > 700) {
+
+                text(
+                        c,
+                        "THE FOREST HAS FALLEN SILENT",
+                        w / 2,
+                        h / 2 - 70,
+                        30
+                );
+            }
+
+            // 두 번째 문구
+            if (elapsed > 1800) {
+
+                text(
+                        c,
+                        "BUT THE SHADOW AWAKENS...",
+                        w / 2,
+                        h / 2,
+                        36
+                );
+            }
+
+            // 게임 타이틀
+            if (elapsed > 3200) {
+
+                text(
+                        c,
+                        "SHADOW RPG",
+                        w / 2,
+                        h / 2 + 100,
+                        60
+                );
+            }
+
+            // 7초 후 처음으로
+            if (elapsed > 7000) {
+
+                ending = false;
+                bossAppeared = false;
+
+                slimeHP = 100;
+                bossHP = 500;
+            }
+        }
+    }
 }
